@@ -1,6 +1,7 @@
 """GraphQL implementation for schedule operations."""
 
 from dagster_dg_cli.api_layer.schemas.schedule import DgApiSchedule, DgApiScheduleList
+from dagster_dg_cli.cli.api.shared import DgApiError
 from dagster_dg_cli.utils.plus.gql_client import IGraphQLClient
 
 # GraphQL queries
@@ -232,4 +233,8 @@ def get_dg_plus_api_schedule_via_graphql(
         if schedule.name == schedule_name:
             return schedule
 
-    raise Exception(f"Schedule not found: {schedule_name}")
+    raise DgApiError(
+        message=f"Schedule not found: {schedule_name}",
+        code="SCHEDULE_NOT_FOUND",
+        status_code=404,
+    )
