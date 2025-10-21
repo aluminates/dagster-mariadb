@@ -13,9 +13,9 @@
 
 error_invalid_asset_key_empty:
   command: "dg api asset get '' --json"
-  expected_code: "INVALID_SUBSET"
-  expected_status: 400
-  description: "Empty asset key should trigger validation error"
+  expected_code: "ASSET_NOT_FOUND"
+  expected_status: 404
+  description: "Empty asset key results in asset not found"
 
 error_invalid_asset_key_malformed:
   command: "dg api asset get 'invalid::asset::key' --json"

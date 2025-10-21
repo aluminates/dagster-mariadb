@@ -327,6 +327,14 @@ def format_error_for_output(exception: Exception, output_json: bool) -> tuple[st
         Tuple of (formatted output string, exit code)
     """
     if isinstance(exception, DgApiError):
+        # Map status code to exit code
+        if 400 <= exception.status_code < 500:
+            exit_code = 1  # Client errors
+        elif 500 <= exception.status_code < 600:
+            exit_code = 5  # Server errors
+        else:
+            exit_code = 1  # Default to client error
+
         if output_json:
             error_dict = {
                 "error": str(exception),
@@ -334,9 +342,9 @@ def format_error_for_output(exception: Exception, output_json: bool) -> tuple[st
                 "statusCode": exception.status_code,
                 "type": exception.error_type,
             }
-            return json.dumps(error_dict), exception.status_code // 100
+            return json.dumps(error_dict), exit_code
         else:
-            return f"Error querying Dagster Plus API: {exception}", exception.status_code // 100
+            return f"Error querying Dagster Plus API: {exception}", exit_code
 
     # Fallback for unexpected exceptions
     if output_json:
