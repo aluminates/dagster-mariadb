@@ -181,7 +181,18 @@ def list_dg_plus_api_schedules_via_graphql(client: IGraphQLClient) -> DgApiSched
 
     workspace_or_error = result.get("workspaceOrError", {})
     if workspace_or_error.get("__typename") == "PythonError":
-        raise Exception(f"GraphQL error: {workspace_or_error.get('message', 'Unknown error')}")
+        from dagster_dg_cli.cli.api.shared import DgApiError
+
+        message = workspace_or_error.get("message", "Unknown error")
+        # Check if this is a scheduler not defined error
+        if "Scheduler is not defined" in message or "scheduler" in message.lower():
+            raise DgApiError(
+                message=message,
+                code="SCHEDULER_NOT_DEFINED",
+                status_code=500,
+            )
+        else:
+            raise Exception(f"GraphQL error: {message}")
 
     schedules = []
     location_entries = workspace_or_error.get("locationEntries", [])

@@ -1385,8 +1385,10 @@
 # ---
 # name: TestDynamicCommandExecution.test_command_execution[error_code_error_scheduler_not_defined_json]
   dict({
-    'items': list([
-    ]),
+    'code': 'INTERNAL_ERROR',
+    'error': 'GraphQL error: Scheduler is not defined for this deployment',
+    'statusCode': 500,
+    'type': 'server_error',
   })
 # ---
 # name: TestDynamicCommandExecution.test_command_execution[error_code_error_unauthorized_asset_get_json]

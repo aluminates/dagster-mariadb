@@ -490,6 +490,12 @@ def list_dg_plus_api_assets_with_status_via_graphql(
 
     result = client.execute(ASSET_RECORDS_WITH_STATUS_QUERY, variables=variables)
 
+    # Check for GraphQL errors at top level
+    if "errors" in result:
+        from dagster_dg_cli.cli.api.shared import get_or_create_dg_api_error
+
+        raise get_or_create_dg_api_error(result["errors"][0])
+
     asset_records_or_error = result.get("assetRecordsOrError", {})
     if asset_records_or_error.get("__typename") == "PythonError":
         raise Exception(f"GraphQL error: {asset_records_or_error.get('message', 'Unknown error')}")
@@ -590,6 +596,12 @@ def get_dg_plus_api_asset_with_status_via_graphql(
     variables = {"assetKeys": [{"path": asset_key_parts}]}
 
     result = client.execute(ASSETS_WITH_STATUS_QUERY, variables=variables)
+
+    # Check for GraphQL errors at top level
+    if "errors" in result:
+        from dagster_dg_cli.cli.api.shared import get_or_create_dg_api_error
+
+        raise get_or_create_dg_api_error(result["errors"][0])
 
     # Handle assetsOrError response structure
     assets_or_error = result.get("assetsOrError", {})

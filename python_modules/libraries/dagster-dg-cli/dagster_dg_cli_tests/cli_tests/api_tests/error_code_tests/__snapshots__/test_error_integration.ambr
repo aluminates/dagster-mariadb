@@ -1,4 +1,18 @@
 # serializer version: 1
+# name: TestErrorIntegration.test_complete_error_flow_json_output[json_error_flow_error_asset_not_found]
+  dict({
+    'command': 'dg api asset get nonexistent-asset-key --json',
+    'description': 'Asset does not exist in the deployment',
+    'exit_code': 1,
+    'expected_code': 'ASSET_NOT_FOUND',
+    'expected_status': 404,
+    'output': '''
+      {"error": "Asset not found: nonexistent-asset-key", "code": "ASSET_NOT_FOUND", "statusCode": 404, "type": "not_found_error"}
+  
+    ''',
+    'scenario': 'error_asset_not_found',
+  })
+# ---
 # name: TestErrorIntegration.test_complete_error_flow_json_output[json_error_flow_error_invalid_asset_key_empty]
   dict({
     'command': "dg api asset get '' --json",
@@ -16,10 +30,10 @@
 # name: TestErrorIntegration.test_complete_error_flow_json_output[json_error_flow_error_invalid_asset_key_malformed]
   dict({
     'command': "dg api asset get 'invalid::asset::key' --json",
-    'description': 'Malformed asset key with invalid characters',
+    'description': 'Malformed asset key results in asset not found',
     'exit_code': 1,
-    'expected_code': 'INVALID_SUBSET',
-    'expected_status': 400,
+    'expected_code': 'ASSET_NOT_FOUND',
+    'expected_status': 404,
     'output': '''
       {"error": "Asset not found: 'invalid::asset::key'", "code": "ASSET_NOT_FOUND", "statusCode": 404, "type": "not_found_error"}
   
@@ -27,21 +41,46 @@
     'scenario': 'error_invalid_asset_key_malformed',
   })
 # ---
-# name: TestErrorIntegration.test_complete_error_flow_json_output[json_error_flow_error_invalid_limit_too_high]
+# name: TestErrorIntegration.test_complete_error_flow_json_output[json_error_flow_error_schedule_not_found]
   dict({
-    'command': 'dg api asset list --limit 2000 --json',
-    'description': 'Limit exceeds maximum allowed value',
-    'exit_code': 2,
-    'expected_code': 'INVALID_SUBSET',
-    'expected_status': 400,
+    'command': 'dg api schedule get nonexistent-schedule --json',
+    'description': 'Schedule does not exist in the repository',
+    'exit_code': 1,
+    'expected_code': 'SCHEDULE_NOT_FOUND',
+    'expected_status': 404,
     'output': '''
-      Usage: dg api asset list [OPTIONS]
-      Try 'dg api asset list -h' for help.
-      
-      Error: Invalid value for '--limit': 2000 is not in the range 1<=x<=1000.
+      {"error": "Schedule not found: nonexistent-schedule", "code": "SCHEDULE_NOT_FOUND", "statusCode": 404, "type": "not_found_error"}
   
     ''',
-    'scenario': 'error_invalid_limit_too_high',
+    'scenario': 'error_schedule_not_found',
+  })
+# ---
+# name: TestErrorIntegration.test_complete_error_flow_json_output[json_error_flow_error_scheduler_not_defined]
+  dict({
+    'command': 'dg api schedule list --json',
+    'description': 'Scheduler is not properly configured',
+    'exit_code': 5,
+    'expected_code': 'SCHEDULER_NOT_DEFINED',
+    'expected_status': 500,
+    'output': '''
+      {"error": "Scheduler is not defined for this deployment", "code": "SCHEDULER_NOT_DEFINED", "statusCode": 500, "type": "server_error"}
+  
+    ''',
+    'scenario': 'error_scheduler_not_defined',
+  })
+# ---
+# name: TestErrorIntegration.test_complete_error_flow_json_output[json_error_flow_error_unauthorized_deployment_list]
+  dict({
+    'command': 'dg api deployment list --json',
+    'description': 'Deployment list access without valid authentication',
+    'exit_code': 1,
+    'expected_code': 'UNAUTHORIZED',
+    'expected_status': 401,
+    'output': '''
+      {"error": "Unauthorized", "code": "UNAUTHORIZED", "statusCode": 401, "type": "authentication_error"}
+  
+    ''',
+    'scenario': 'error_unauthorized_deployment_list',
   })
 # ---
 # name: TestErrorIntegration.test_complete_error_flow_text_output[text_error_flow_error_asset_not_found_text]
@@ -56,104 +95,5 @@
   
     ''',
     'scenario': 'error_asset_not_found_text',
-  })
-# ---
-# name: TestErrorIntegration.test_complete_error_flow_text_output[text_error_flow_error_invalid_limit_text]
-  dict({
-    'command': 'dg api asset list --limit 2000',
-    'description': 'Validation error in text format',
-    'exit_code': 2,
-    'expected_code': 'INVALID_SUBSET',
-    'expected_status': 400,
-    'output': '''
-      Usage: dg api asset list [OPTIONS]
-      Try 'dg api asset list -h' for help.
-      
-      Error: Invalid value for '--limit': 2000 is not in the range 1<=x<=1000.
-  
-    ''',
-    'scenario': 'error_invalid_limit_text',
-  })
-# ---
-# name: TestErrorIntegration.test_complete_error_flow_text_output[text_error_flow_error_python_error_text]
-  dict({
-    'command': 'dg api asset get asset-causing-python-error',
-    'description': 'Server error in text format',
-    'exit_code': 1,
-    'expected_code': 'PYTHON_ERROR',
-    'expected_status': 500,
-    'output': '''
-      Error querying Dagster Plus API: Asset not found: asset-causing-python-error
-  
-    ''',
-    'scenario': 'error_python_error_text',
-  })
-# ---
-# name: TestErrorIntegration.test_complete_error_flow_text_output[text_error_flow_error_unauthorized_text]
-  dict({
-    'command': 'dg api asset list',
-    'description': 'Authentication error in text format',
-    'exit_code': 0,
-    'expected_code': 'UNAUTHORIZED',
-    'expected_status': 401,
-    'output': '''
-      Asset Key: aws/cloud-prod/user_roles
-      ID: dagster_open_platform.__repository__.["aws", "cloud-prod", "user_roles"]
-      Description: Snowflake stages for AWS data, creates new stages for new assets, refreses existing stages.
-      Group: aws_stages
-      Kinds: None
-      Deps: None
-      
-      Asset Key: aws/cloud-prod/workspace_staging_asset_checks
-      ID: dagster_open_platform.__repository__.["aws", "cloud-prod", "workspace_staging_asset_checks"]
-      Description: Snowflake stages for AWS data, creates new stages for new assets, refreses existing stages.
-      Group: aws_stages
-      Kinds: None
-      Deps: None
-      
-      Asset Key: aws/cloud-prod/workspace_staging_assets
-      ID: dagster_open_platform.__repository__.["aws", "cloud-prod", "workspace_staging_assets"]
-      Description: Snowflake stages for AWS data, creates new stages for new assets, refreses existing stages.
-      Group: aws_stages
-      Kinds: None
-      Deps: None
-      
-      Asset Key: aws/cloud-prod/workspace_staging_external_repo_metadata
-      ID: dagster_open_platform.__repository__.["aws", "cloud-prod", "workspace_staging_external_repo_metadata"]
-      Description: Snowflake stages for AWS data, creates new stages for new assets, refreses existing stages.
-      Group: aws_stages
-      Kinds: None
-      Deps: None
-      
-      Asset Key: aws/cloud-prod/workspace_staging_jobs
-      ID: dagster_open_platform.__repository__.["aws", "cloud-prod", "workspace_staging_jobs"]
-      Description: Snowflake stages for AWS data, creates new stages for new assets, refreses existing stages.
-      Group: aws_stages
-      Kinds: None
-      Deps: None
-      
-      Asset Key: aws/cloud-prod/workspace_staging_metadata
-      ID: dagster_open_platform.__repository__.["aws", "cloud-prod", "workspace_staging_metadata"]
-      Description: Snowflake stages for AWS data, creates new stages for new assets, refreses existing stages.
-      Group: aws_stages
-      Kinds: None
-      Deps: None
-      
-      Asset Key: aws/cloud-prod/workspace_staging_partitions
-      ID: dagster_open_platform.__repository__.["aws", "cloud-prod", "workspace_staging_partitions"]
-      Description: Snowflake stages for AWS data, creates new stages for new assets, refreses existing stages.
-      Group: aws_stages
-      Kinds: None
-      Deps: None
-      
-      Asset Key: aws/cloud-prod/workspace_staging_pipelines
-      ID: dagster_open_platform.__repository__.["aws", "cloud-prod", "workspace_staging_pipelines"]
-      Description: Snowflake stages for AWS data, creates new stages for new assets, refreses existing stages.
-      Group: aws_stages
-      Kinds: None
-      Deps: None
-  
-    ''',
-    'scenario': 'error_unauthorized_text',
   })
 # ---

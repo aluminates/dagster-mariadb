@@ -21,7 +21,8 @@ class TestErrorMapping:
         mappings = get_graphql_error_mappings()
 
         # Authentication/Authorization errors
-        expected_auth_errors = {"UnauthorizedError"}
+        # Note: Dagster Plus returns UNAUTHENTICATED (the GraphQL error code) rather than UnauthorizedError
+        expected_auth_errors = {"UNAUTHENTICATED"}
 
         # Not Found errors
         expected_not_found_errors = {

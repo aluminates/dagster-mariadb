@@ -218,7 +218,8 @@ def get_graphql_error_mappings() -> dict[str, DgApiErrorMapping]:
     """Returns cached mapping from GraphQL __typename to error metadata."""
     return {
         # Authentication/Authorization
-        "UnauthorizedError": DgApiErrorMapping(
+        # Note: UNAUTHENTICATED is the actual GraphQL error code returned by Dagster Plus
+        "UNAUTHENTICATED": DgApiErrorMapping(
             code="UNAUTHORIZED",
             status_code=401,
         ),
@@ -293,15 +294,38 @@ def get_or_create_dg_api_error(graphql_error) -> DgApiError:
     """Convert a GraphQL error to a DgApiError instance.
 
     Args:
-        graphql_error: GraphQL error object with message and optional extensions
+        graphql_error: GraphQL error object/dict with message and optional extensions
 
     Returns:
         DgApiError instance with appropriate code and status
     """
     # Extract error type from GraphQL error extensions
+    # Handle both dict (from recordings) and object (from real GraphQL)
     error_type = None
-    if hasattr(graphql_error, "extensions") and graphql_error.extensions:
-        error_type = graphql_error.extensions.get("errorType")
+    error_class = None
+    error_message = None
+
+    if isinstance(graphql_error, dict):
+        extensions = graphql_error.get("extensions", {})
+        error_type = extensions.get("errorType") or extensions.get("code")
+        error_class = extensions.get("errorClass")
+        error_message = graphql_error.get("message", "Unknown error")
+    elif hasattr(graphql_error, "extensions") and graphql_error.extensions:
+        error_type = graphql_error.extensions.get("errorType") or graphql_error.extensions.get(
+            "code"
+        )
+        error_class = graphql_error.extensions.get("errorClass")
+        error_message = str(graphql_error.message)
+    else:
+        error_message = str(graphql_error)
+
+    # Special case: PYTHON_ERROR with InvalidSubsetError class should map to INVALID_SUBSET
+    if error_type == "PYTHON_ERROR" and error_class and "InvalidSubsetError" in error_class:
+        return DgApiError(
+            message=error_message,
+            code="INVALID_SUBSET",
+            status_code=400,
+        )
 
     # Get mapping or use default
     mappings = get_graphql_error_mappings()
@@ -311,9 +335,7 @@ def get_or_create_dg_api_error(graphql_error) -> DgApiError:
         mapping = get_default_error_mapping()
 
     # Create DgApiError with mapped values
-    return DgApiError(
-        message=str(graphql_error.message), code=mapping.code, status_code=mapping.status_code
-    )
+    return DgApiError(message=error_message, code=mapping.code, status_code=mapping.status_code)
 
 
 def format_error_for_output(exception: Exception, output_json: bool) -> tuple[str, int]:
