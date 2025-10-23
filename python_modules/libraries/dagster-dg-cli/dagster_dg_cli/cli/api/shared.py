@@ -223,6 +223,10 @@ def get_graphql_error_mappings() -> dict[str, DgApiErrorMapping]:
             code="UNAUTHORIZED",
             status_code=401,
         ),
+        "UnauthorizedError": DgApiErrorMapping(
+            code="UNAUTHORIZED",
+            status_code=401,
+        ),
         # Not Found Errors
         "AssetNotFoundError": DgApiErrorMapping(
             code="ASSET_NOT_FOUND",
