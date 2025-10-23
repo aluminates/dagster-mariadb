@@ -21,8 +21,9 @@ class TestErrorMapping:
         mappings = get_graphql_error_mappings()
 
         # Authentication/Authorization errors
-        # Note: Dagster Plus returns UNAUTHENTICATED (the GraphQL error code) rather than UnauthorizedError
-        expected_auth_errors = {"UNAUTHENTICATED"}
+        # Note: Dagster Plus returns UNAUTHENTICATED (the GraphQL error code) for REST APIs
+        # and UnauthorizedError for legacy dg plus commands
+        expected_auth_errors = {"UNAUTHENTICATED", "UnauthorizedError"}
 
         # Not Found errors
         expected_not_found_errors = {
@@ -239,16 +240,20 @@ class TestErrorMapping:
         assert api_error.status_code == 500
         assert api_error.error_type == "server_error"
 
-    def test_all_mapped_error_codes_unique(self):
-        """Test that all error codes are unique across mappings."""
+    def test_graphql_types_have_valid_mappings(self):
+        """Test that all GraphQL error types have valid error code mappings.
+
+        Note: Multiple GraphQL types can map to the same error code (e.g.,
+        UNAUTHENTICATED and UnauthorizedError both map to UNAUTHORIZED).
+        """
         mappings = get_graphql_error_mappings()
 
-        codes = [mapping.code for mapping in mappings.values()]
-        unique_codes = set(codes)
-
-        assert len(codes) == len(unique_codes), (
-            f"Found duplicate error codes: {[code for code in codes if codes.count(code) > 1]}"
-        )
+        # Ensure each GraphQL type has a valid mapping
+        for graphql_type, mapping in mappings.items():
+            assert mapping.code, f"GraphQL type {graphql_type} should have a non-empty error code"
+            assert mapping.status_code in {400, 401, 403, 404, 422, 500}, (
+                f"GraphQL type {graphql_type} should have a valid HTTP status code"
+            )
 
     def test_comprehensive_error_coverage(self):
         """Test that we have good coverage of different error scenarios."""
